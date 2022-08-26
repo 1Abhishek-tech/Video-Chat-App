@@ -21,10 +21,10 @@ app.get('/:room', (req, res) => {
 })
 
 io.on('connection', socket => { // socket is the connection
-    socket.on('join-room', (roomId) => { // join-room is the event name
+    socket.on('join-room', (roomId, userId) => { // join-room is the event name
         socket.join(roomId); // join the room
-        socket.to(roomId).emit('user-connected'); // user-connected is the event name
-        // socket.to(roomId).broadcast.emit('user-connected'); // send the message to everyone in the room
+        socket.broadcast.to(roomId).emit('user-connected', userId);
+        // socket.to(roomId).emit('user-connected', userId); // user-connected is the event name
     })
 })
 
