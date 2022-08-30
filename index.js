@@ -2,32 +2,39 @@ const express = require('express');
 const app = express();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
-const { v4: uuidv4 } = require('uuid');
 const { ExpressPeerServer } = require('peer');
 const peerServer = ExpressPeerServer(server, {
     debug: true
 });
-
-app.use(express.static(__dirname + '/public'));
-app.set('view engine', 'ejs');
+const { v4: uuidV4 } = require('uuid')
 
 app.use('/peerjs', peerServer);
+
+app.set('view engine', 'ejs')
+app.use(express.static('public'))
+
 app.get('/', (req, res) => {
-    res.redirect(`/${uuidv4()}`);
-});
+    res.redirect(`/${uuidV4()}`)
+})
 
 app.get('/:room', (req, res) => {
     res.render('room', { roomId: req.params.room })
 })
 
-io.on('connection', socket => { // socket is the connection
-    socket.on('join-room', (roomId, userId) => { // join-room is the event name
-        socket.join(roomId); // join the room
-        socket.broadcast.to(roomId).emit('user-connected', userId);
-        // socket.to(roomId).emit('user-connected', userId); // user-connected is the event name
+io.on('connection', socket => {
+    socket.on('join-room', (roomId, userId) => {
+        socket.join(roomId)
+        socket.to(roomId).emit('user-connected', userId);
+        // messages
+        socket.on('message', (message) => {
+            //send message to the same room
+            io.to(roomId).emit('createMessage', message)
+        });
+
+        socket.on('disconnect', () => {
+            socket.to(roomId).emit('user-disconnected', userId)
+        })
     })
 })
 
-server.listen(8000, () => {
-    console.log('Server started on port 3000');
-});
+server.listen(process.env.PORT || 8000);
